@@ -7,3 +7,4 @@ log-error = /var/log/mysql/error.log
 slow_query_log = 1
 long_query_time = 5
 slow_query_log_file = /var/log/mysql/slow-queries.log
+max_allowed_packet=64M

@@ -8,11 +8,15 @@
 
 /config/cli/php5/timezone.ini
 /config/apache/php5/timezone.ini
+/config/solr/*/data/*
+!/config/solr/*/.gitkeep
 
 /data/mysql/*
 /data/solr/*
+/data/cli/*
 !/data/mysql/.gitkeep
 !/data/solr/.gitkeep
+!/data/cli/.gitkeep
 
 /logs/apache/*
 /logs/cli/*

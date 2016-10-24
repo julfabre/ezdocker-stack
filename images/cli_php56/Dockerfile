@@ -2,7 +2,7 @@ FROM klabs/php56
 MAINTAINER Kaliop
 
 LABEL php.version=5.6 \
-      application.type=ezpublish
+      application.type=drupal
 
 ARG DOCKER_TIMEZONE=Europe/Paris
 ARG DOCKER_LOCALE=fr_FR.UTF-8
@@ -83,6 +83,19 @@ RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local
 
 
 # -----------------------------------------------------------------------------
+
+# Drupal console + Drush  global install
+# -----------------------------------------------------------------------------
+RUN git clone --depth 1 https://github.com/drush-ops/drush.git /usr/local/src/drush && \
+    ln -s /usr/local/src/drush/drush /usr/bin/drush && \
+    cd /usr/local/src/drush && composer install
+RUN curl https://drupalconsole.com/installer -L -o drupal.phar
+RUN mv drupal.phar /usr/local/bin/drupal && \
+    chmod +x /usr/local/bin/drupal
+
+RUN sudo -u site -- sh -c 'cd /home/site/; drupal init'
+# -----------------------------------------------------------------------------
+
 
 # Clear archives in apt cache folder
 RUN apt-get clean && rm -rf /var/lib/apt/lists/*

@@ -1,7 +1,7 @@
-eZ Publish Web Development Environment
+Drupal 8 Web Development Environment
 ============================================================
 
-This repository provides a Docker stack management script and docker-compose.yml templates needed to create and use an eZ Publish Development Environment.
+This repository provides a Docker stack management script and docker-compose.yml templates needed to create and use an Drupal 8 Development Environment.
 
 It is to be used in conjunction with another repository which will contain the Application source code.
 The Application source code can be installed in the 'site' directory within the Development Environment root directory, 
@@ -62,9 +62,7 @@ There are plenty of tutorials available on the internet. This is a good quicksta
 
 The apache container provides multiple virtual hosts attached to specific domain name patterns : 
 
-* ez5 virtual host (*.ezdev) : used for eZ Publish 5 projects
-* ezplatform virtual host (*.ez6) : used for eZ Platform projects
-* ez4 virtual host (*.ez4): used for eZ Publish 4 (legacy) projects
+* dp8 virtual host (*.dp8) : used for Drupal 8 projects
 
 These virtual hosts are located in the config/apache/sites-available folders and mounted as volumes in the apache container, in docker-compose.yml.
 You can therefore change these virtual hosts to suit your project's need.
@@ -122,8 +120,8 @@ You can therefore change these virtual hosts to suit your project's need.
         This will help with avoiding filesystem permissions later on with the web server container mount points.
         To find out the id of the current user/group on the host machine, execute the `id` command.  
 
-    * The MySQL settings are already configured in the eZ Publish environment and on first run an empty database will be
-        created ready for you to import the required data as outlined in the setup instructions in the eZPublish repository.
+    * The MySQL settings are already configured in the Drupal 8 environment and on first run an empty database will be
+        created ready for you to import the required data.
         
     The `docker-compose.config.sh` file contains your project specific settings. It will be generated on first launch but feel free to edit them manually if you need to.
 
@@ -147,7 +145,7 @@ You can therefore change these virtual hosts to suit your project's need.
 	
 	* Your project name
     * Is this stack used for backend or frontend development (lighter stack) ?
-	* Will the docker stack be used for only one project (ez instance will be cloned in site folder)
+	* Will the docker stack be used for only one project (instance will be cloned in site folder)
 	or for many projects already present on your computer ?
 	* If the stack is a mono project stack, the Git url of your project.
 	* If this is a multi projects stack, the root path of your projects (usually /home/user/www)
@@ -157,7 +155,7 @@ You can therefore change these virtual hosts to suit your project's need.
 	* Your solr configuration folder if you need a specific configuration for your project
 	* The PHP Version you wish to use (5.4 or 5.6)
 	
-	The ezdocker stack uses Docker images from [klabs Docker Hub Repository](https://hub.docker.com/u/klabs/)
+	The docker stack uses Docker images from [klabs Docker Hub Repository](https://hub.docker.com/u/klabs/)
     These images will be downloaded the first time you start the stack, and will be updated if needed each time you start the stack.
 
 
@@ -233,7 +231,7 @@ Note: by default you will be using the 'dev' Symfony environment. To change it, 
 
 ### Using Solr admin
 
-Solr admin interface can be accessed either through port 8983, i.e http://localhost:8983, or with the /solr/ url, i.e http://www.mysite.ezdev/solr/ .
+Solr admin interface can be accessed either through port 8983, i.e http://localhost:8983, or with the /solr/ url, i.e http://www.mysite.dp8/solr/ .
 
 ## Stopping the Environment
 
@@ -284,17 +282,6 @@ Note: to connect to the web or cli containers, use `su site` instead of `bash`
 The cli container startup script will look for environment variables in order to setup composer.
 It is therefore possible to add :
 
-* Your own github oauth key (to avoid github rate limit)
-* Credentials for http-basic auth needed form some vendors (updates.ez.no for example)
-
-To do so, just add the followng variables in your docker-compose.env.local file : 
-
-* GITHUB_OAUTH=xxxxxxxxxxxxxxxxx
-* COMPOSER_HTTP_AUTH_DOMAIN=updates.ez.no # For example
-* COMPOSER_HTTP_AUTH_LOGIN=xxxxxxxxxx
-* COMPOSER_HTTP_AUTH_PASSWORD=xxxxxxxxxxxxx
-
-
 ### Checking the status of all existing containers (not only the active ones)
 
     docker ps -a
@@ -336,7 +323,7 @@ The database data files are stored locally in [data/mysql](data/mysql). You do n
 they will be created the first time the container is run, and be persisted when it is shut down.
 The created database will be empty, and you will need to fill it up with application data using some SQL or other
 script which will be provided as part of the Application.  
-If you want to change the database name (default is 'ezdev'), just create an environment variable named `MYSQL_DATABASE` in `docker-compose.env.local` file.
+If you want to change the database name (default is 'dp8'), just create an environment variable named `MYSQL_DATABASE` in `docker-compose.env.local` file.
 
 	MYSQL_DATABASE=mydbname
 

@@ -144,11 +144,11 @@ buildDockerComposeConfigFileIfNeeded() {
         fi
 
         # Ask for storage mountpoints
-        read -p "Enter path to your ezpublish storages on host (default : /mnt/\$USER/ ) : " storage_local_path
+        read -p "Enter path to your drupal storages on host (default : /mnt/\$USER/ ) : " storage_local_path
         storage_local_path=${storage_local_path:-/mnt/\$USER/}
 
         echo "Your local storage folder will be mounted in /mnt/$USER inside containers"
-        echo "(Don't forget to symlink your storage in your ez5 instance after 1st run)"
+        echo "(Don't forget to symlink your storage in your dp8 instance after 1st run)"
 
         # Ask for timezone for docker args (needs docker-compsoe v2 format)
         read -p "Enter your current timezone (default: Europe/Paris) : " timezone
@@ -159,8 +159,8 @@ buildDockerComposeConfigFileIfNeeded() {
         echo -e "[Date]\ndate.timezone=$timezone" > config/apache/php5/timezone.ini
 
         # Ask for custom vcl file path
-        read -p "Enter path to Varnish vcl file (default: ./config/varnish/ez54.vcl) : " vcl_filepath
-        vcl_filepath=${vcl_filepath:-./config/varnish/ez54.vcl}
+        read -p "Enter path to Varnish vcl file (default: ./config/varnish/dp8.vcl) : " vcl_filepath
+        vcl_filepath=${vcl_filepath:-./config/varnish/dp8.vcl}
 
         # Ask for custom solr conf folder path
         read -p "Enter path to solr configuration folder (default: ./config/solr) : " solr_conf_path
@@ -212,7 +212,7 @@ case "$1" in
     start|run)
         $DOCKER_COMPOSE -p "$DOCKER_PROJECT_NAME" down
         $DOCKER_COMPOSE pull
-        $DOCKER_COMPOSE -p "$DOCKER_PROJECT_NAME" up -d
+        $DOCKER_COMPOSE -p  "$DOCKER_PROJECT_NAME" up -d
         ;;
 
     stop)

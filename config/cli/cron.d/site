@@ -1,4 +1,4 @@
-# eZPublish cronjobs
+#
 #
 #
 # Note: running the cronjobs twice for env and dev environments is a bit weird, since they share the same db
