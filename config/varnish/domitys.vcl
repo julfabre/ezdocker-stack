@@ -1,26 +1,60 @@
 vcl 4.0;
 import std;
 import directors;
-
+ 
 # This Varnish VCL has been adapted from the Four Kitchens VCL for Varnish 3.
 # This VCL is for using cache tags with drupal 8. Minor chages of VCL provided by Jeff Geerling.
-
+ 
 # Default backend definition. Points to Apache, normally.
-# Apache is in this config on port 80.
-backend default {
-    .host = "web";
-    .port = "80";
-    .first_byte_timeout = 300s;
+
+
+backend server1 { # Define one backend
+  .host = "127.0.0.1";    # IP or Hostname of backend
+  .port = "82";           # Port Apache or whatever is listening
+  .max_connections = 40; # That's it
+
+  .probe = {
+    #.url = "/"; # short easy way (GET /)
+    # We prefer to only do a HEAD /
+    .request =
+      "HEAD / HTTP/1.1"
+      "Host: aides-01infra.pcc"
+      "Connection: close"
+      "User-Agent: Varnish Health Probe";
+
+    .interval  = 5s; # check the health of each backend every 5 seconds
+    .timeout   = 1s; # timing out after 1 second.
+    .window    = 5;  # If 3 out of the last 5 polls succeeded the backend is considered healthy, otherwise it will be marked as sick
+    .threshold = 3;
+  }
+
+  .first_byte_timeout     = 300s;   # How long to wait before we receive a first byte from our backend?
+  .connect_timeout        = 5s;     # How long to wait for a backend connection?
+  .between_bytes_timeout  = 2s;     # How long to wait between bytes received from our backend?
 }
 
+sub vcl_init {
+  # Called when VCL is loaded, before any requests pass through it.
+  # Typically used to initialize VMODs.
+
+  new vdir = directors.round_robin();
+  vdir.add_backend(server1);
+  # vdir.add_backend(server...);
+  # vdir.add_backend(servern);
+}
+
+ 
 # Access control list for PURGE requests.
 # Here you need to put the IP address of your web server
 acl purge {
     "127.0.0.1";
 }
-
+ 
 # Respond to incoming requests.
 sub vcl_recv {
+
+    set req.backend_hint = vdir.backend(); # send all traffic to the vdir director
+
     # Add an X-Forwarded-For header with the client IP address.
     if (req.restarts == 0) {
         if (req.http.X-Forwarded-For) {
@@ -30,7 +64,7 @@ sub vcl_recv {
             set req.http.X-Forwarded-For = client.ip;
         }
     }
-
+ 
     # Only allow PURGE requests from IP addresses in the 'purge' ACL.
     if (req.method == "PURGE") {
         if (!client.ip ~ purge) {
@@ -38,14 +72,14 @@ sub vcl_recv {
         }
         return (hash);
     }
-
+ 
     # Only allow BAN requests from IP addresses in the 'purge' ACL.
     if (req.method == "BAN") {
         # Same ACL check as above:
   #      if (!client.ip ~ purge) {
   #          return (synth(403, "Not allowed."));
   #     }
-
+ 
         # Logic for the ban, using the Cache-Tags header. For more info
         # see https://github.com/geerlingguy/drupal-vm/issues/397.
         if (req.http.Cache-Tags) {
@@ -54,16 +88,16 @@ sub vcl_recv {
         else {
             return (synth(403, "Cache-Tags header missing."));
         }
-
+ 
         # Throw a synthetic page so the request won't go to the backend.
         return (synth(200, "Ban added."));
     }
-
+ 
     # Only cache GET and HEAD requests (pass through POST requests).
     if (req.method != "GET" && req.method != "HEAD") {
         return (pass);
     }
-
+ 
     # Pass through any administrative or AJAX-related paths.
     if (req.url ~ "^/status\.php$" ||
         req.url ~ "^/update\.php$" ||
@@ -74,12 +108,12 @@ sub vcl_recv {
         req.url ~ "^.*/ahah/.*$") {
            return (pass);
     }
-
+ 
     # Removing cookies for static content so Varnish caches these files.
     if (req.url ~ "(?i)\.(pdf|asc|dat|txt|doc|xls|ppt|tgz|csv|png|gif|jpeg|jpg|ico|swf|css|js)(\?.*)?$") {
         unset req.http.Cookie;
     }
-
+ 
     # Remove all cookies that Drupal doesn't need to know about. We explicitly
     # list the ones that Drupal does need, the SESS and NO_CACHE. If, after
     # running this code we find that either of these two cookies remains, we
@@ -98,7 +132,7 @@ sub vcl_recv {
         set req.http.Cookie = regsuball(req.http.Cookie, ";(SESS[a-z0-9]+|SSESS[a-z0-9]+|NO_CACHE)=", "; \1=");
         set req.http.Cookie = regsuball(req.http.Cookie, ";[^ ][^;]*", "");
         set req.http.Cookie = regsuball(req.http.Cookie, "^[; ]+|[; ]+$", "");
-
+ 
         if (req.http.Cookie == "") {
             # If there are no remaining cookies, remove the cookie header. If there
             # aren't any cookie headers, Varnish's default behavior will be to cache
@@ -111,38 +145,36 @@ sub vcl_recv {
             return (pass);
         }
     }
-
-    return (hash);
 }
-
+ 
 # Set a header to track a cache HITs and MISSes.
 sub vcl_deliver {
     # Remove ban-lurker friendly custom headers when delivering to client.
     unset resp.http.X-Url;
     unset resp.http.X-Host;
     # Comment these for easier Drupal cache tag debugging in development.
-    #unset resp.http.Cache-Tags;
-    #unset resp.http.X-Drupal-Cache-Contexts;
-
+    unset resp.http.Cache-Tags;
+    unset resp.http.X-Drupal-Cache-Contexts;
+ 
     if (obj.hits > 0) {
-        set resp.http.Cache-Tag = "HIT";
+        set resp.http.Cache-Tags = "HIT";
     }
     else {
-        set resp.http.Cache-Tag = "MISS";
+        set resp.http.Cache-Tags = "MISS";
     }
 }
-
+ 
 # Instruct Varnish what to do in the case of certain backend responses (beresp).
 sub vcl_backend_response {
     # Set ban-lurker friendly custom headers.
     set beresp.http.X-Url = bereq.url;
     set beresp.http.X-Host = bereq.http.host;
-
+ 
     # Cache 404s, 301s, at 500s with a short lifetime to protect the backend.
     if (beresp.status == 404 || beresp.status == 301 || beresp.status == 500) {
         set beresp.ttl = 10m;
     }
-
+ 
     # Don't allow static files to set cookies.
     # (?i) denotes case insensitive in PCRE (perl compatible regular expressions).
     # This list of extensions appears twice, once here and again in vcl_recv so
@@ -150,7 +182,8 @@ sub vcl_backend_response {
     if (bereq.url ~ "(?i)\.(pdf|asc|dat|txt|doc|xls|ppt|tgz|csv|png|gif|jpeg|jpg|ico|swf|css|js)(\?.*)?$") {
         unset beresp.http.set-cookie;
     }
-
+ 
     # Allow items to remain in cache up to 6 hours past their cache expiration.
     set beresp.grace = 6h;
 }
+
