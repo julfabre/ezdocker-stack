@@ -36,9 +36,9 @@ chown -R site:site /var/lock/apache2
 
 echo [`date`] Starting the service
 
-#Load dynamic vhost (including common config) if files are found
+#Load dp8 dynamic vhost (including common config) if files are found
 if [ -f "/etc/apache2/sites-available/001-dynamic-vhost-dp8.conf" ] && [ -f "/etc/apache2/sites-available/dp8-common.conf" ];then
-	a2ensite 001-dynamic-vhost-ez5.conf
+	a2ensite 001-dynamic-vhost-dp8.conf
 fi
 
 
